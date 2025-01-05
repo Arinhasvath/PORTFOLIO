@@ -187,3 +187,257 @@ def test_get_products(client):
     assert isinstance(response.json, list)  # Vérifie que la réponse est une liste JSON.
 ```
 **
+
+
+Voici une version détaillée et commentée de votre guide fondamental avec des explications exhaustives de chaque bloc de code. J'ajoute également une synthèse pour chaque partie afin de résumer le rôle de chaque élément et de faciliter votre compréhension.
+
+---
+
+# **Guide Fondamental FMP - Partie 2 : Structure avancée de l'API**
+
+## **Page 7 - Organisation des Routes et Blueprints**
+
+### **7.1 Organisation des Routes avec Blueprint**
+Les Blueprints dans Flask permettent de structurer et modulariser les routes. Cela améliore la maintenabilité et facilite le développement collaboratif.
+
+#### **Code : Organisation des Routes**
+```python
+# backend/app/routes/products.py
+from flask import Blueprint, jsonify, request  # Import des outils Flask pour les routes et les requêtes.
+from app.models.product import Product  # Import du modèle Product pour interagir avec la base de données.
+from app import db  # Import de l'objet db pour les opérations sur la base de données.
+
+# Création du Blueprint pour regrouper toutes les routes liées aux produits.
+products = Blueprint('products', __name__)
+
+@products.route('/api/products', methods=['GET'])
+def get_products():
+    """
+    Route pour obtenir tous les produits.
+    Cette route retourne une liste de produits au format JSON.
+    """
+    # Récupération de tous les produits depuis la base de données.
+    products = Product.query.all()
+    
+    # Conversion des produits en liste de dictionnaires JSON.
+    return jsonify([
+        {
+            'id': p.id,
+            'name': p.name,
+            'price': p.price,
+            'description': p.description
+        } for p in products
+    ])
+
+@products.route('/api/products/<int:id>', methods=['GET'])
+def get_product(id):
+    """
+    Route pour obtenir un produit spécifique via son ID.
+    Si l'ID n'existe pas, une erreur 404 est retournée.
+    """
+    # Recherche du produit par ID. Renvoie une erreur 404 si l'ID n'existe pas.
+    product = Product.query.get_or_404(id)
+    
+    # Conversion du produit en dictionnaire JSON.
+    return jsonify({
+        'id': product.id,
+        'name': product.name,
+        'price': product.price,
+        'description': product.description
+    })
+```
+
+---
+
+### **7.2 Enregistrement des Blueprints**
+Pour activer les Blueprints dans l'application, ils doivent être enregistrés dans le fichier principal `__init__.py`.
+
+#### **Code : Enregistrement des Blueprints**
+```python
+# backend/app/__init__.py
+def create_app():
+    """
+    Fonction principale pour créer et configurer l'application Flask.
+    """
+    app = Flask(__name__)  # Initialisation de l'application Flask.
+    app.config.from_object(Config)  # Chargement de la configuration.
+
+    db.init_app(app)  # Initialisation de la base de données avec l'application.
+
+    # Importation et enregistrement des Blueprints
+    from app.routes.products import products  # Import du Blueprint des produits.
+    app.register_blueprint(products)  # Enregistrement du Blueprint pour activer les routes.
+
+    return app  # Retourne l'application Flask configurée.
+```
+
+---
+
+## **Page 8 - Modèles de Données**
+
+### **8.1 Création des Modèles**
+Le modèle représente la structure de la table dans la base de données et définit ses attributs ainsi que les méthodes associées.
+
+#### **Code : Modèle Product**
+```python
+# backend/app/models/product.py
+from app import db  # Import de l'objet db pour définir les modèles.
+from datetime import datetime  # Utilisé pour ajouter une date de création.
+
+class Product(db.Model):
+    """
+    Modèle représentant un produit dans la base de données.
+    Chaque produit est associé à des cartouches d'imprimantes.
+    """
+    id = db.Column(db.Integer, primary_key=True)  # Clé primaire unique.
+    name = db.Column(db.String(100), nullable=False)  # Nom du produit (obligatoire).
+    price = db.Column(db.Float, nullable=False)  # Prix du produit (obligatoire).
+    description = db.Column(db.Text)  # Description du produit (facultatif).
+    printer_model = db.Column(db.String(50))  # Modèle d'imprimante compatible (facultatif).
+    stock = db.Column(db.Integer, default=0)  # Quantité en stock (par défaut : 0).
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)  # Date de création par défaut.
+
+    def to_dict(self):
+        """
+        Convertit un produit en dictionnaire JSON.
+        Utilisé pour retourner les données au client sous forme de JSON.
+        """
+        return {
+            'id': self.id,
+            'name': self.name,
+            'price': self.price,
+            'description': self.description,
+            'printer_model': self.printer_model,
+            'stock': self.stock
+        }
+```
+
+---
+
+### **8.2 Initialisation de la Base de Données**
+Une fonction d'initialisation est créée pour configurer la base de données et insérer des données de test.
+
+#### **Code : Initialisation de la Base de Données**
+```python
+# backend/init_db.py
+from app import create_app, db  # Import de l'application et de l'objet db.
+from app.models.product import Product  # Import du modèle Product.
+
+app = create_app()  # Création de l'application Flask.
+
+def init_db():
+    """
+    Initialise la base de données.
+    Crée les tables et insère des données de test.
+    """
+    with app.app_context():  # Création d'un contexte Flask pour accéder à la base de données.
+        db.create_all()  # Création de toutes les tables définies par les modèles.
+
+        # Ajout d'un produit de test.
+        test_product = Product(
+            name="Cartouche HP 304 Noire",
+            price=19.99,
+            description="Cartouche d'encre noire pour HP",
+            printer_model="HP DeskJet 3750",
+            stock=10
+        )
+
+        db.session.add(test_product)  # Ajout du produit à la session.
+        db.session.commit()  # Enregistrement dans la base de données.
+
+if __name__ == '__main__':
+    init_db()  # Lancement de l'initialisation si ce fichier est exécuté directement.
+```
+
+---
+
+## **Page 9 - Opérations CRUD**
+
+### **9.1 Création d'un Produit**
+Une route POST permet de créer un produit en recevant les données du client.
+
+#### **Code : Création d'un Produit**
+```python
+@products.route('/api/products', methods=['POST'])
+def create_product():
+    """
+    Crée un nouveau produit à partir des données reçues dans la requête.
+    Retourne le produit créé en JSON avec le statut 201 (créé).
+    """
+    data = request.get_json()  # Récupère les données JSON de la requête.
+
+    # Création d'un nouvel objet produit.
+    new_product = Product(
+        name=data['name'],
+        price=data['price'],
+        description=data.get('description', ''),  # Description par défaut vide.
+        printer_model=data.get('printer_model', ''),  # Modèle d'imprimante par défaut vide.
+        stock=data.get('stock', 0)  # Stock par défaut : 0.
+    )
+
+    db.session.add(new_product)  # Ajout du produit dans la session.
+    db.session.commit()  # Validation des modifications.
+
+    return jsonify(new_product.to_dict()), 201  # Retourne le produit en JSON avec le statut 201.
+```
+
+---
+
+### **9.2 Mise à Jour d'un Produit**
+Une route PUT permet de mettre à jour un produit existant.
+
+#### **Code : Mise à Jour d'un Produit**
+```python
+@products.route('/api/products/<int:id>', methods=['PUT'])
+def update_product(id):
+    """
+    Met à jour un produit existant à partir des données reçues.
+    Retourne le produit mis à jour en JSON.
+    """
+    product = Product.query.get_or_404(id)  # Recherche le produit par ID ou renvoie une erreur 404.
+    data = request.get_json()  # Récupère les données JSON de la requête.
+
+    # Mise à jour des champs avec les données reçues ou maintien des valeurs existantes.
+    product.name = data.get('name', product.name)
+    product.price = data.get('price', product.price)
+    product.description = data.get('description', product.description)
+    product.printer_model = data.get('printer_model', product.printer_model)
+    product.stock = data.get('stock', product.stock)
+
+    db.session.commit()  # Validation des modifications.
+
+    return jsonify(product.to_dict())  # Retourne le produit mis à jour.
+```
+
+---
+
+## **Page 10 - Gestion des Erreurs**
+
+### **10.1 Configuration des Erreurs**
+Les erreurs sont gérées pour fournir des messages clairs au client.
+
+#### **Code : Gestion des Erreurs**
+```python
+# backend/app/errors.py
+from flask import jsonify
+
+def register_error_handlers(app):
+    """
+    Enregistre les gestionnaires d'erreurs pour l'application Flask.
+    """
+    @app.errorhandler(404)
+    def not_found_error(error):
+        """
+        Gère les erreurs 404 (ressource introuvable).
+        """
+        return jsonify({
+            'error': 'Resource not found',
+            'message': str(error)
+        }), 404
+
+    @app.errorhandler(500)
+    def internal_error(error):
+        """
+        Gère les erreurs 500 (erreur serveur).
+        """
+        db.session.rollback()  # Annule les transactions en cas d'erreur
