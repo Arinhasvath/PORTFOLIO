@@ -161,7 +161,6 @@ if __name__ == '__main__':  # Vérifie si ce script est exécuté directement
 ## Synthèse des Fonctions
 
 Voici un diagramme simplifié pour mieux comprendre les interactions et le flux de l'application :
-
 ```mermaid
 flowchart TD
     A[Page d'accueil (index.html)] -->|Lien vers| B[Produits (products.html)]
