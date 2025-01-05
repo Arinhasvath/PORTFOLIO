@@ -94,20 +94,41 @@ app = create_app()
 
 def init_db():
     with app.app_context():
-        # Créer toutes les tables
+        # Création de toutes les tables
+        print("Création des tables...")
         db.create_all()
         
-        # Ajouter des données de test
-        test_product = Product(
-            name="Cartouche HP 304 Noire",
-            price=19.99,
-            description="Cartouche d'encre noire pour HP",
-            printer_model="HP DeskJet 3750",
-            stock=10
-        )
+        # Ajout de données de test
+        print("Ajout des produits de test...")
+        products = [
+            Product(
+                name="Cartouche HP 304 Noire",
+                price=19.99,
+                description="Cartouche d'encre noire pour HP DeskJet",
+                printer_model="HP DeskJet 3750",
+                stock=10
+            ),
+            Product(
+                name="Cartouche HP 304 Couleur",
+                price=24.99,
+                description="Cartouche d'encre couleur pour HP DeskJet",
+                printer_model="HP DeskJet 3750",
+                stock=8
+            ),
+            Product(
+                name="Cartouche Canon PG-540",
+                price=17.99,
+                description="Cartouche d'encre noire pour Canon",
+                printer_model="Canon PIXMA MG3650",
+                stock=15
+            )
+        ]
         
-        db.session.add(test_product)
+        for product in products:
+            db.session.add(product)
+        
         db.session.commit()
+        print("Base de données initialisée avec succès !")
 
 if __name__ == '__main__':
     init_db()
