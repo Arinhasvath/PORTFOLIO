@@ -1,5 +1,3 @@
-**## Code Commenté et Explications en Détail
-
 ### 1. Routes Flask avec Blueprint
 
 #### **Fichier : `backend/app/routes/products.py`**
